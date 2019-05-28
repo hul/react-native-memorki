@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { NativeRouter, Route, Link, Switch } from 'react-router-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const TYPES = [
   'ios-bicycle',
@@ -15,6 +16,22 @@ const TYPES = [
 
 const SIZE = 80;
 
+function createModel(types) {
+  return types
+    .reduce((acc, curr) => {
+      const card = {
+        type: curr,
+        flipped: false,
+        matched: false
+      };
+      acc.push({...card});
+      acc.push({...card});
+      return acc;
+    }, [])
+    .sort(() => Math.random() > .5)
+    .map((card, key) => ({ ...card, key}));
+}
+
 const HomePage = () => (
   <View style={styles.container}>
     <Text style={styles.heading}>Home</Text>
@@ -24,14 +41,25 @@ const HomePage = () => (
   </View>
 );
 
-const GamePage = () => (
-  <View style={styles.container}>
-    <Board cards={TYPES}/>
-    <Link to={'/'}>
-      <Text style={styles.link}>Powrót</Text>
-    </Link>
-  </View>
-);
+class GamePage extends React.Component {
+  state = {
+    cards: createModel(TYPES),
+    flipped: [],
+    previousType: ''
+  };
+
+  render() {
+    const { cards } = this.state;
+    return (
+      <View style={styles.container}>
+        <Board cards={cards}/>
+        <Link to={'/'}>
+          <Text style={styles.link}>Powrót</Text>
+        </Link>
+      </View>
+    );
+  }
+}
 
 const Routes = () => (
   <Switch>
@@ -42,7 +70,7 @@ const Routes = () => (
 
 const Board = ({ cards }) => (
   <View style={[boardStyles.board]}>
-    {cards.map(card => <Card model={card} key={card}/>)}
+    {cards.map(card => <Card model={card} key={card.key}/>)}
   </View>
 );
 
@@ -51,7 +79,9 @@ class Card extends React.Component {
     const { model } = this.props;
     return (
       <View style={cardStyles.card}>
-        <View style={cardStyles.icon}>{model.type}</View>
+        <View style={cardStyles.icon}>
+          <Ionicons name={model.type} size={SIZE} />
+        </View>
         <View style={cardStyles.curtain}></View>
       </View>
     );
@@ -109,11 +139,13 @@ const cardStyles = StyleSheet.create({
     position: 'absolute',
     width: SIZE,
     height: SIZE,
+    alignItems: 'center'
   },
   curtain: {
     position: 'absolute',
     width: SIZE,
     height: SIZE,
-    backgroundColor: '#E36622'
+    backgroundColor: '#E36622',
+    opacity: .5
   }
 });
