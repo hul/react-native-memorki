@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableWithoutFeedback } from 'react-native';
 import { NativeRouter, Route, Link, Switch } from 'react-router-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Animatable from 'react-native-animatable';
 
 const TYPES = [
   'ios-bicycle',
@@ -34,12 +35,12 @@ function createModel(types) {
 }
 
 const HomePage = () => (
-  <View style={styles.container}>
+  <Animatable.View animation={'zoomInUp'} style={styles.container}>
     <Text style={styles.heading}>Home</Text>
     <Link to={'/game'}>
       <Text style={styles.link}>Zagraj</Text>
     </Link>
-  </View>
+  </Animatable.View>
 );
 
 class GamePage extends React.Component {
@@ -108,12 +109,12 @@ class GamePage extends React.Component {
   render() {
     const { cards } = this.state;
     return (
-      <View style={styles.container}>
+      <Animatable.View animation={'zoomInUp'} style={styles.container}>
         <Board cards={cards} handleCardClick={this.handleCardClick}/>
         <Link to={'/'}>
           <Text style={styles.link}>Powrót</Text>
         </Link>
-      </View>
+      </Animatable.View>
     );
   }
 }
@@ -136,15 +137,23 @@ class Card extends React.Component {
     this.props.handleCardClick(this.props.model);
   };
 
+  handleAnimationRef = ref => this.animationRef = ref;
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (prevProps.model.flipped && !this.props.flipped && this.animationRef) {
+      this.animationRef.slideInDown();
+    }
+  }
+
   render () {
     const { model } = this.props;
     if (model.matched) {
       return (
-        <View style={cardStyles.card}>
+        <Animatable.View style={cardStyles.card} animation={'zoomOut'}>
           <View style={cardStyles.icon}>
-            <Ionicons name={model.type} size={SIZE} color={'lightgray'} />
+            <Ionicons name={model.type} size={SIZE} />
           </View>
-        </View>
+        </Animatable.View>
       );
     }
     return (
@@ -153,7 +162,10 @@ class Card extends React.Component {
           <View style={cardStyles.icon}>
             <Ionicons name={model.type} size={SIZE} />
           </View>
-          {!model.flipped && <View style={cardStyles.curtain}></View>}
+          {!model.flipped
+            ? <Animatable.View ref={this.handleAnimationRef} style={cardStyles.curtain}></Animatable.View>
+            : <Animatable.View animation={'slideOutUp'} style={cardStyles.curtain}></Animatable.View>
+          }
         </View>
       </TouchableWithoutFeedback>
     );
