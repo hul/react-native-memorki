@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, TouchableWithoutFeedback } from 'react-native';
 import { NativeRouter, Route, Link, Switch } from 'react-router-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -15,6 +15,7 @@ const TYPES = [
 ];
 
 const SIZE = 80;
+const HIDE_TIMEOUT = 1000;
 
 function createModel(types) {
   return types
@@ -48,11 +49,67 @@ class GamePage extends React.Component {
     previousType: ''
   };
 
+  handleCardClick = (clickedCard) => {
+    const { flipped } = this.state;
+
+    if (flipped.length === 2) {
+      return;
+    }
+
+    if (flipped.length === 1) {
+      this.matchOrFlipCardsBack(clickedCard);
+    }
+
+    if (flipped.length < 2) {
+      this.flipCard(clickedCard);
+    }
+  };
+
+  flipCard(clickedCard) {
+    const { flipped, cards } = this.state;
+    this.setState({
+      previousType: clickedCard.type,
+      flipped: [ ...flipped, clickedCard.key ],
+      cards: cards.map(card => {
+        if (card.key === clickedCard.key) {
+          return {...card, flipped: true }
+        }
+
+        return card;
+      })
+    });
+  }
+
+  matchOrFlipCardsBack(clickedCard) {
+    const { previousType, cards } = this.state;
+    const matched = clickedCard.type === previousType;
+
+    setTimeout(() => {
+      const { flipped } = this.state;
+
+      this.setState({
+        flipped: [],
+        previousType: '',
+        cards: cards.map(card => {
+          if (flipped.includes(card.key)) {
+            return {
+              ...card,
+              flipped: false,
+              matched
+            }
+          }
+
+          return card;
+        })
+      });
+    }, HIDE_TIMEOUT);
+  }
+
   render() {
     const { cards } = this.state;
     return (
       <View style={styles.container}>
-        <Board cards={cards}/>
+        <Board cards={cards} handleCardClick={this.handleCardClick}/>
         <Link to={'/'}>
           <Text style={styles.link}>Powrót</Text>
         </Link>
@@ -68,22 +125,37 @@ const Routes = () => (
   </Switch>
 );
 
-const Board = ({ cards }) => (
+const Board = ({ cards, handleCardClick }) => (
   <View style={[boardStyles.board]}>
-    {cards.map(card => <Card model={card} key={card.key}/>)}
+    {cards.map(card => <Card model={card} key={card.key} handleCardClick={handleCardClick}/>)}
   </View>
 );
 
 class Card extends React.Component {
+  handleClick = () => {
+    this.props.handleCardClick(this.props.model);
+  };
+
   render () {
     const { model } = this.props;
-    return (
-      <View style={cardStyles.card}>
-        <View style={cardStyles.icon}>
-          <Ionicons name={model.type} size={SIZE} />
+    if (model.matched) {
+      return (
+        <View style={cardStyles.card}>
+          <View style={cardStyles.icon}>
+            <Ionicons name={model.type} size={SIZE} color={'lightgray'} />
+          </View>
         </View>
-        <View style={cardStyles.curtain}></View>
-      </View>
+      );
+    }
+    return (
+      <TouchableWithoutFeedback onPress={this.handleClick}>
+        <View style={cardStyles.card}>
+          <View style={cardStyles.icon}>
+            <Ionicons name={model.type} size={SIZE} />
+          </View>
+          {!model.flipped && <View style={cardStyles.curtain}></View>}
+        </View>
+      </TouchableWithoutFeedback>
     );
   }
 }
@@ -131,7 +203,6 @@ const cardStyles = StyleSheet.create({
     width: SIZE,
     height: SIZE,
     overflow: 'hidden',
-    backgroundColor: 'red',
     position: 'relative',
     margin: 5,
   },
@@ -146,6 +217,5 @@ const cardStyles = StyleSheet.create({
     width: SIZE,
     height: SIZE,
     backgroundColor: '#E36622',
-    opacity: .5
   }
 });
