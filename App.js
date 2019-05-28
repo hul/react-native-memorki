@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TouchableWithoutFeedback } from 'react-native';
 import { NativeRouter, Route, Link, Switch } from 'react-router-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
+import { Audio } from 'expo';
 
 const TYPES = [
   'ios-bicycle',
@@ -133,11 +134,27 @@ const Board = ({ cards, handleCardClick }) => (
 );
 
 class Card extends React.Component {
+  clickSound = new Audio.Sound();
+
   handleClick = () => {
     this.props.handleCardClick(this.props.model);
+    this.playClickSound();
   };
 
   handleAnimationRef = ref => this.animationRef = ref;
+
+  async initSound() {
+    this.clickSound.loadAsync(require('./assets/click.mp3'));
+  }
+
+  async playClickSound() {
+    await this.clickSound.setPositionAsync(0);
+    await this.clickSound.playAsync();
+  }
+
+  componentDidMount() {
+    this.initSound();
+  }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
     if (prevProps.model.flipped && !this.props.flipped && this.animationRef) {
